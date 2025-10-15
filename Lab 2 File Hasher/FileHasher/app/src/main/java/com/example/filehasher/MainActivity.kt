@@ -1,5 +1,6 @@
 package com.example.filehasher
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -16,51 +17,63 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.filehasher.ui.theme.FileHasherTheme
 import java.io.BufferedReader
+import java.io.File
 import java.io.InputStreamReader
+import java.security.MessageDigest
 
-class MainActivity : ComponentActivity() {
-    private fun calcHash(filePath: Uri?) {
+class MainActivity : Activity() {
+    private fun calcHash(filePath: Uri): String {
         Log.i("uri",filePath.toString())
+
+        val text = readTextFromUri(filePath)
+        val digest = MessageDigest.getInstance("SHA-256")
+        val hashBytes = digest.digest(text.toByteArray(Charsets.UTF_8))
+        return hashBytes.fold("") { str, byte -> str + "%02x".format(byte) }
+        //Log.i("tagg", "correctly read" + text)
     }
-//    val contentResolver = applicationContext.contentResolver
-//
-//    private fun readTextFromUri(uri: Uri): String {
-//        val stringBuilder = StringBuilder()
-//        contentResolver.openInputStream(uri)?.use { inputStream ->
-//            BufferedReader(InputStreamReader(inputStream)).use { reader ->
-//                var line: String? = reader.readLine()
-//                while (line != null) {
-//                    stringBuilder.append(line)
-//                    line = reader.readLine()
-//                }
-//            }
-//        }
-//        return stringBuilder.toString()
-//    }
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        Log.d("deb","hello")
-        when {
-            intent?.action == Intent.ACTION_SEND -> {
-                Log.i("uri","receive")
-
-                val uri = intent.data
-                calcHash(uri)
-
-            }
-
-        }
-        Log.i("tag","hello")
-        enableEdgeToEdge()
-        setContent {
-            FileHasherTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "hello",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+    private fun readTextFromUri(uri: Uri): String {
+        val stringBuilder = StringBuilder()
+        contentResolver.openInputStream(uri)?.use { inputStream ->
+            BufferedReader(InputStreamReader(inputStream)).use { reader ->
+                var line: String? = reader.readLine()
+                while (line != null) {
+                    stringBuilder.append(line)
+                    line = reader.readLine()
                 }
             }
+        }
+        return stringBuilder.toString()
+    }
+//    private fun readTextFromUri(uri: String): String {
+//        val bufferedReader: BufferedReader = File(uri).bufferedReader()
+//        val inputString = bufferedReader.use { it.readText() }
+//        println(inputString)
+//        return  inputString
+//    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        Log.i("tag","hello")
+
+        if (intent?.action == "com.mobiotsec.intent.action.HASHFILE") {
+            val uri = intent.data
+            if (uri != null) {
+                val hash = calcHash(uri)
+
+                val resultIntent = Intent()
+                resultIntent.putExtra("hash", hash)
+                setResult(RESULT_OK, resultIntent)
+                finish()
+            } else {
+                Log.e("HASH", "Nessun URI ricevuto")
+                setResult(Activity.RESULT_CANCELED)
+                finish()
+            }
+        } else {
+            Log.e("HASH", "Intent non riconosciuto")
+            setResult(Activity.RESULT_CANCELED)
+            finish()
         }
 
 
@@ -73,21 +86,5 @@ class MainActivity : ComponentActivity() {
         //resultIntent.putExtra("hash", hash)
         //  setResult(Activity.RESULT_OK, resultIntent)
         //finish()
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    FileHasherTheme {
-        Greeting("Android")
     }
 }
