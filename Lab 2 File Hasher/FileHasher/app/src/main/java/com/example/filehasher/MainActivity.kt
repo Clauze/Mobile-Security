@@ -44,12 +44,6 @@ class MainActivity : Activity() {
         }
         return stringBuilder.toString()
     }
-//    private fun readTextFromUri(uri: String): String {
-//        val bufferedReader: BufferedReader = File(uri).bufferedReader()
-//        val inputString = bufferedReader.use { it.readText() }
-//        println(inputString)
-//        return  inputString
-//    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
